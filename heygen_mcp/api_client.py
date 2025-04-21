@@ -430,6 +430,27 @@ class HeyGenApiClient:
             status=lambda d: d.get("status"),
         )
 
+    async def generate_avatar_video_with_multiple_scenes(
+        self, video_request: List[VideoGenerateRequest]
+    ) -> MCPVideoGenerateResponse:
+        """Generate an avatar video using the HeyGen API."""
+
+        async def api_call():
+            return await self._make_request(
+                "video/generate", method="POST", data=video_request.model_dump()
+            )
+
+        return await self._handle_api_request(
+            api_call=api_call,
+            response_model_class=VideoGenerateResponse,
+            mcp_response_class=MCPVideoGenerateResponse,
+            error_msg="No video generation data returned.",
+            video_id=lambda d: d.get("video_id"),
+            task_id=lambda d: d.get("task_id"),
+            video_url=lambda d: d.get("video_url"),
+            status=lambda d: d.get("status"),
+        )
+
     async def get_video_status(self, video_id: str) -> MCPVideoStatusResponse:
         """Get the status of a generated video from the API."""
 

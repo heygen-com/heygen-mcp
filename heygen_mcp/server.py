@@ -6,7 +6,7 @@ import sys
 
 from dotenv import load_dotenv
 from mcp.server.fastmcp import FastMCP
-
+from typing import List
 from heygen_mcp.api_client import (
     Character,
     Dimension,
@@ -141,6 +141,28 @@ async def generate_avatar_video(
     except Exception as e:
         return MCPVideoGenerateResponse(error=str(e))
 
+@mcp.tool(
+    name="generate_avatar_video_with_multiple_scenes",
+    description="Generates a new avatar video via the HeyGen API. with multiple scenes.",
+)
+async def generate_avatar_video_with_multiple_scenes(
+    title: str,
+    video_inputs: List[VideoInput],
+    dimension: Dimension = Dimension(width=1280, height=720),
+) -> MCPVideoGenerateResponse:
+    """Generate a new avatar video using the HeyGen API."""
+    try:
+        # Create the request object with default values
+        request = VideoGenerateRequest(
+            title=title,
+            video_inputs=video_inputs,
+            dimension=dimension,
+        )
+
+        client = await get_api_client()
+        return await client.generate_avatar_video_with_multiple_scenes(request)
+    except Exception as e:
+        return MCPVideoGenerateResponse(error=str(e))
 
 @mcp.tool(
     name="get_avatar_video_status",
