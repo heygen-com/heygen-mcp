@@ -97,7 +97,7 @@ class AvatarsInGroupResponse(BaseHeyGenResponse):
 # Video generation models
 class Character(BaseModel):
     type: str = "avatar"
-    avatar_id: str
+    avatar_id: Optional[str] = None
     avatar_style: str = "normal"
     scale: float = 1.0
 
@@ -105,7 +105,7 @@ class Character(BaseModel):
 class Voice(BaseModel):
     type: str = "text"
     input_text: str
-    voice_id: str
+    voice_id: Optional[str] = None
 
 
 class VideoInput(BaseModel):
@@ -186,6 +186,8 @@ class MCPVideoGenerateResponse(BaseHeyGenResponse):
     task_id: Optional[str] = None
     video_url: Optional[str] = None
     status: Optional[str] = None
+    download_path: Optional[str] = None
+    resource: Optional[Any] = None
 
 
 class MCPVideoStatusResponse(BaseHeyGenResponse):
@@ -476,3 +478,73 @@ class HeyGenApiClient:
             )
         except Exception as e:
             return MCPVideoStatusResponse(error=f"An unexpected error occurred: {e}")
+
+    async def download_video(self, video_url: str, download_path: str) -> str:
+        """Download a video from the given URL to a local file path.
+
+        Args:
+            video_url: The URL of the video to download
+            download_path: Local path where to save the downloaded video
+
+        Returns:
+            The absolute path of the downloaded file
+
+        Raises:
+            httpx.RequestError: If there's a network-related error
+            Exception: For any other unexpected errors
+        """
+        if not video_url:
+            raise ValueError("Video URL is required for download")
+
+        try:
+            # Make the request to download the video
+            async with httpx.AsyncClient(timeout=60.0) as client:
+                response = await client.get(video_url)
+                response.raise_for_status()
+
+            # Ensure the download directory exists
+            import os
+
+            download_dir = os.path.dirname(download_path)
+            if download_dir and not os.path.exists(download_dir):
+                os.makedirs(download_dir)
+
+            # Write the video content to the file
+            with open(download_path, "wb") as f:
+                f.write(response.content)
+
+            # Return the absolute path
+            return os.path.abspath(download_path)
+        except Exception as e:
+            raise Exception(f"Error downloading video: {e}")
+
+    async def wait_for_video_completion(self, video_id: str, max_attempts: int = 60, delay_seconds: int = 10) -> MCPVideoStatusResponse:
+        """Wait for a video to complete processing, polling the status endpoint.
+
+        Args:
+            video_id: The ID of the video to check
+            max_attempts: Maximum number of polling attempts
+            delay_seconds: Delay between polling attempts in seconds
+
+        Returns:
+            The final video status response
+        """
+        import asyncio
+
+        for attempt in range(max_attempts):
+            # Get the current status
+            status_response = await self.get_video_status(video_id)
+            
+            # If there was an error or the status is 'completed' or 'failed', return immediately
+            if status_response.error or status_response.status in ("completed", "failed"):
+                return status_response
+            
+            # Otherwise, wait for the specified delay before checking again
+            await asyncio.sleep(delay_seconds)
+        
+        # If we've reached the maximum attempts, return the last status with an error
+        return MCPVideoStatusResponse(
+            video_id=video_id,
+            status="timeout",
+            error=f"Video processing did not complete after {max_attempts * delay_seconds} seconds."
+        )
