@@ -22,10 +22,10 @@ class VoiceInfo(BaseModel):
     language: str
     gender: str
     name: str
-    preview_audio: HttpUrl
-    support_pause: bool
-    emotion_support: bool
-    support_interactive_avatar: bool
+    preview_audio: Optional[HttpUrl] = None
+    support_pause: Optional[bool] = None
+    emotion_support: Optional[bool] = None
+    support_interactive_avatar: Optional[bool] = None
 
 
 class VoicesData(BaseModel):

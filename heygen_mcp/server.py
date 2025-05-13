@@ -117,14 +117,28 @@ async def get_avatars_in_avatar_group(group_id: str) -> MCPAvatarsInGroupRespons
 
 @mcp.tool(
     name="generate_avatar_video",
-    description="Generates a new avatar video via the HeyGen API.",
+    description="Generates a new avatar video via the HeyGen API. Supports custom resolution.",
 )
 async def generate_avatar_video(
-    avatar_id: str, input_text: str, voice_id: str, title: str = ""
+    avatar_id: str, 
+    input_text: str, 
+    voice_id: str, 
+    title: str = "",
+    width: int = 1280,
+    height: int = 720
 ) -> MCPVideoGenerateResponse:
-    """Generate a new avatar video using the HeyGen API."""
+    """Generate a new avatar video using the HeyGen API.
+    
+    Args:
+        avatar_id: The ID of the avatar to use
+        input_text: The text to convert to speech
+        voice_id: The ID of the voice to use
+        title: Optional title for the video
+        width: Video width in pixels (default: 1280)
+        height: Video height in pixels (default: 720)
+    """
     try:
-        # Create the request object with default values
+        # Create the request object with custom dimensions
         request = VideoGenerateRequest(
             title=title,
             video_inputs=[
@@ -133,7 +147,7 @@ async def generate_avatar_video(
                     voice=Voice(input_text=input_text, voice_id=voice_id),
                 )
             ],
-            dimension=Dimension(width=1280, height=720),
+            dimension=Dimension(width=width, height=height),
         )
 
         client = await get_api_client()
